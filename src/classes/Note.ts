@@ -51,6 +51,7 @@ export class Note {
   note: BaseNote;
   accidental: Accidental;
   octave: number;
+  audioContext: AudioContext = new AudioContext();
   private alternativeNotation: AlternativeNoteNotation;
 
   static readonly basePitch: number = 440;
@@ -129,14 +130,28 @@ export class Note {
     return Y;
   }
 
-  playNote(totalDuration: number): () => void {
-    const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    oscillator.connect(context.destination);
-    // oscillator.frequency.value = this.pitch;
+  private setupSound(duration: number): number[] {
+    const arr = [];
+    console.log(this.audioContext.sampleRate);
+    for (let i = 0; i < this.audioContext.sampleRate * duration; i++) {
+      arr[i] = this.generateSinWave(i);
+    }
+    console.log(arr);
+    return arr;
+  }
 
-    oscillator.start(context.currentTime + 2);
-    return oscillator.stop;
+  playNote(totalDuration: number) {
+    const buf = new Float32Array(this.setupSound(totalDuration));
+    const buffer = this.audioContext.createBuffer(
+      1,
+      buf.length,
+      this.audioContext.sampleRate
+    );
+    buffer.copyToChannel(buf, 0);
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.audioContext.destination);
+    source.start(0);
   }
 
   private calculatePitch() {

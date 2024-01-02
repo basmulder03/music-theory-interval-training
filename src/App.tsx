@@ -7,18 +7,13 @@ function App() {
   let stopContext: () => void;
   let stoppable: boolean = false;
 
-  const toggleNote = () => {
-    if (stoppable) {
-      stopContext();
-    } else {
-      stoppable = true;
-      stopContext = note.playNote(5000);
-    }
+  const playNote = () => {
+    note.playNote(5);
   };
 
   return (
     <div className="App">
-      <button>Toggle Note</button>
+      <button onClick={playNote}>Toggle Note</button>
     </div>
   );
 }
