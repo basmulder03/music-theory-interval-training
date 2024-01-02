@@ -1,24 +1,24 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { Accidental, BaseNote, NoteList } from "./classes/Note";
 
 function App() {
+  const note = NoteList.find((n) => n.stringNotation === "A4")!!;
+
+  let stopContext: () => void;
+  let stoppable: boolean = false;
+
+  const toggleNote = () => {
+    if (stoppable) {
+      stopContext();
+    } else {
+      stoppable = true;
+      stopContext = note.playNote(5000);
+    }
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <button>Toggle Note</button>
     </div>
   );
 }
