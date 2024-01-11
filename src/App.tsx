@@ -8,7 +8,7 @@ function App() {
   let stoppable: boolean = false;
 
   const playNote = () => {
-    note.playNote(5);
+    note.playNote(1);
   };
 
   return (

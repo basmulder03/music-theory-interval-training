@@ -51,7 +51,6 @@ export class Note {
   note: BaseNote;
   accidental: Accidental;
   octave: number;
-  audioContext: AudioContext = new AudioContext();
   private alternativeNotation: AlternativeNoteNotation;
 
   static readonly basePitch: number = 440;
@@ -91,67 +90,83 @@ export class Note {
   }
 
   private generateSinWave(time: number): number {
-    const { sin, exp, pow, PI } = Math;
+    /*
+      Formula as found:
+        Y = sin(2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time)
+      Overtones
+        Y += sin(2 * 2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time) / 2
+        Y += sin(3 * 2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time) / 4
+        Y += sin(4 * 2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time) / 8
+        Y += sin(5 * 2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time) / 16
+        Y += sin(6 * 2 * pi * frequency * time) * exp(-0.0004 * 2 * pi * frequency * time) / 32
+      Saturation
+        Y += Y * Y * Y
+      Optional
+        Y *= 1 + 16 * time * exp(-6 * time)
 
-    // Base sin wave
-    let Y =
-      (sin(2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      2;
+      Other formula
+        y = 0.6 * sin(1*frequency*time) * exp(-0.0015*frequency*time);
+        y += 0.4 * sin(2*frequency*time) * exp(-0.0015 * frequency *  time);
+        y += y * y * y
+        y *= 1 + 16 * time * exp(-6 * time)
 
-    // overtones
-    Y +=
-      (sin(2 * 2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      2;
-    Y +=
-      (sin(3 * 2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      4;
-    Y +=
-      (sin(4 * 2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      8;
-    Y +=
-      (sin(5 * 2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      16;
-    Y +=
-      (sin(6 * 2 * PI * this.pitch * time) *
-        exp(-0.0004 * 2 * PI * this.pitch * time)) /
-      32;
+      Third formula
+        y  = 0.6*sin(1.0*w*t)*exp(-0.0008*w*t);
+        y += 0.3*sin(2.0*w*t)*exp(-0.0010*w*t);
+        y += 0.1*sin(4.0*w*t)*exp(-0.0015*w*t);
+        y += 0.2*y*y*y;
+        y *= 0.9 + 0.1*cos(70.0*t);
+        y = 2.0*y*exp(-22.0*t) + y;
 
-    // Saturate sound
-    Y += pow(Y, 3);
-
-    // I don't know what this does.
-    Y *= 1 + 16 * time * exp(-6 * time);
-
-    return Y;
-  }
-
-  private setupSound(duration: number): number[] {
-    const arr = [];
-    console.log(this.audioContext.sampleRate);
-    for (let i = 0; i < this.audioContext.sampleRate * duration; i++) {
-      arr[i] = this.generateSinWave(i);
-    }
-    console.log(arr);
-    return arr;
+        https://dsp.stackexchange.com/questions/46598/mathematical-equation-for-the-sound-wave-that-a-piano-makes
+    */
+    const { exp, sin, cos } = Math;
+    // const sin = (num: number) => Math.sin(num * (Math.PI / 180));
+    // const cos = (num: number) => Math.sin(num * (Math.PI / 180));
+    let w = this.pitch;
+    let t = time * 44100;
+    let y = 0.6 * sin(1.0 * w * t) * exp(-0.0008 * w * t);
+    y += 0.3 * sin(2.0 * w * t) * exp(-0.001 * w * t);
+    y += 0.1 * sin(4.0 * w * t) * exp(-0.0015 * w * t);
+    y += 0.2 * y * y * y;
+    y *= 0.9 + 0.1 * cos(70.0 * t);
+    y = 2.0 * y * exp(-22.0 * t) + y;
+    return y;
   }
 
   playNote(totalDuration: number) {
-    const buf = new Float32Array(this.setupSound(totalDuration));
-    const buffer = this.audioContext.createBuffer(
-      1,
-      buf.length,
-      this.audioContext.sampleRate
+    const audioCtx = new window.AudioContext();
+
+    // Create an empty three-second stereo buffer at the sample rate of the AudioContext
+    const myArrayBuffer = audioCtx.createBuffer(
+      2,
+      audioCtx.sampleRate * totalDuration,
+      audioCtx.sampleRate
     );
-    buffer.copyToChannel(buf, 0);
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.connect(this.audioContext.destination);
-    source.start(0);
+
+    // Fill the buffer with white noise;
+    // just random values between -1.0 and 1.0
+    for (let channel = 0; channel < myArrayBuffer.numberOfChannels; channel++) {
+      // This gives us the actual ArrayBuffer that contains the data
+      const nowBuffering = myArrayBuffer.getChannelData(channel);
+      for (let i = 0; i < myArrayBuffer.length; i++) {
+        // Math.random() is in [0; 1.0]
+        // audio needs to be in [-1.0; 1.0]
+        nowBuffering[i] = this.generateSinWave(i);
+      }
+      console.log(nowBuffering);
+    }
+
+    // Get an AudioBufferSourceNode.
+    // This is the AudioNode to use when we want to play an AudioBuffer
+    const source = audioCtx.createBufferSource();
+    // set the buffer in the AudioBufferSourceNode
+    source.buffer = myArrayBuffer;
+    // connect the AudioBufferSourceNode to the
+    // destination so we can hear the sound
+    source.connect(audioCtx.destination);
+    // start the source playing
+    source.start();
   }
 
   private calculatePitch() {
