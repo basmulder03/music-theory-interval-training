@@ -1,0 +1,12 @@
+{
+  "files": {
+    "main.css": "/music-theory-interval-training/static/css/main.31d6cfe0.css",
+    "main.js": "/music-theory-interval-training/static/js/main.b9e8c694.js",
+    "index.html": "/music-theory-interval-training/index.html",
+    "main.b9e8c694.js.map": "/music-theory-interval-training/static/js/main.b9e8c694.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.31d6cfe0.css",
+    "static/js/main.b9e8c694.js"
+  ]
+}
