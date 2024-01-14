@@ -1,25 +1,12 @@
+import { findKeyOfSubOject } from "../extensions/findKeyOfSubObject";
+import { getRandomItemFromArray } from "../extensions/getRandomItemFromArray";
+import { defaultFormula } from "./MathBuilder";
+
 export enum Accidental {
   Natural = "♮",
   Flat = "♭",
   Sharp = "♯",
 }
-
-export const CompareAccententals = (a: Accidental, b: Accidental): number => {
-  if (a === b) return 0;
-  else if (a === Accidental.Natural && b === Accidental.Flat) return 1;
-  else if (a === Accidental.Natural && b === Accidental.Sharp) return -1;
-  else if (
-    (a === Accidental.Flat && b === Accidental.Natural) ||
-    (a === Accidental.Flat && b === Accidental.Sharp)
-  )
-    return -1;
-  else if (
-    (a === Accidental.Sharp && b === Accidental.Flat) ||
-    (a === Accidental.Sharp && b === Accidental.Natural)
-  )
-    return 1;
-  return 0;
-};
 
 export enum BaseNote {
   A = "A",
@@ -31,9 +18,230 @@ export enum BaseNote {
   G = "G",
 }
 
+export enum Level {
+  Level1,
+  Level2,
+  Level3,
+  Level4,
+}
+
+enum IntervalType {
+  Perfect = "Perfect",
+  Minor = "Minor",
+  Major = "Major",
+  Diminished = "Diminished",
+  Augmented = "Augmented",
+}
+
+enum IntervalAmount {
+  Unison = "Unison",
+  Second = "Second",
+  Third = "Third",
+  Fourth = "Fourth",
+  Fifth = "Fifth",
+  Sixth = "Sixth",
+  Seventh = "Seventh",
+  Octave = "Octave",
+}
+
+class Interval {
+  type: IntervalType;
+  amount: IntervalAmount;
+
+  constructor(type: IntervalType, amount: IntervalAmount) {
+    this.type = type;
+    this.amount = amount;
+  }
+
+  toString() {
+    return `${this.type} ${this.amount.toLowerCase()}`;
+  }
+}
+
+export const IntervalDifferenceMap: {
+  [semiTones: number]: {
+    intervals: Interval[];
+    otherNames: string[];
+  };
+} = {
+  0: {
+    intervals: [
+      new Interval(IntervalType.Perfect, IntervalAmount.Unison),
+      new Interval(IntervalType.Diminished, IntervalAmount.Second),
+    ],
+    otherNames: ["P1", "d2"],
+  },
+  1: {
+    intervals: [
+      new Interval(IntervalType.Minor, IntervalAmount.Second),
+      new Interval(IntervalType.Augmented, IntervalAmount.Unison),
+    ],
+    otherNames: ["semitone", "half tone", "half step", "m2", "A1"],
+  },
+  2: {
+    intervals: [
+      new Interval(IntervalType.Major, IntervalAmount.Second),
+      new Interval(IntervalType.Diminished, IntervalAmount.Third),
+    ],
+    otherNames: ["tone", "whole tone", "whole step", "M2", "d3"],
+  },
+  3: {
+    intervals: [
+      new Interval(IntervalType.Minor, IntervalAmount.Third),
+      new Interval(IntervalType.Augmented, IntervalAmount.Second),
+    ],
+    otherNames: ["m3", "A2"],
+  },
+  4: {
+    intervals: [
+      new Interval(IntervalType.Major, IntervalAmount.Third),
+      new Interval(IntervalType.Diminished, IntervalAmount.Fourth),
+    ],
+    otherNames: ["M3", "d4"],
+  },
+  5: {
+    intervals: [
+      new Interval(IntervalType.Perfect, IntervalAmount.Fourth),
+      new Interval(IntervalType.Augmented, IntervalAmount.Third),
+    ],
+    otherNames: ["P4", "A3"],
+  },
+  6: {
+    intervals: [
+      new Interval(IntervalType.Diminished, IntervalAmount.Fifth),
+      new Interval(IntervalType.Augmented, IntervalAmount.Fourth),
+    ],
+    otherNames: ["tritone", "d5", "A4"],
+  },
+  7: {
+    intervals: [
+      new Interval(IntervalType.Perfect, IntervalAmount.Fifth),
+      new Interval(IntervalType.Diminished, IntervalAmount.Sixth),
+    ],
+    otherNames: ["P5", "d6"],
+  },
+  8: {
+    intervals: [
+      new Interval(IntervalType.Minor, IntervalAmount.Sixth),
+      new Interval(IntervalType.Augmented, IntervalAmount.Fifth),
+    ],
+    otherNames: ["m6", "A5"],
+  },
+  9: {
+    intervals: [
+      new Interval(IntervalType.Major, IntervalAmount.Sixth),
+      new Interval(IntervalType.Diminished, IntervalAmount.Seventh),
+    ],
+    otherNames: ["M6", "d7"],
+  },
+  10: {
+    intervals: [
+      new Interval(IntervalType.Minor, IntervalAmount.Seventh),
+      new Interval(IntervalType.Augmented, IntervalAmount.Sixth),
+    ],
+    otherNames: ["m7", "A6"],
+  },
+  11: {
+    intervals: [
+      new Interval(IntervalType.Major, IntervalAmount.Seventh),
+      new Interval(IntervalType.Diminished, IntervalAmount.Octave),
+    ],
+    otherNames: ["M7", "d8"],
+  },
+  12: {
+    intervals: [
+      new Interval(IntervalType.Perfect, IntervalAmount.Octave),
+      new Interval(IntervalType.Augmented, IntervalAmount.Seventh),
+    ],
+    otherNames: ["P8", "A7"],
+  },
+};
+
+type NoteAccidental = {
+  note: BaseNote;
+  accidental: Accidental;
+};
+
+const totalNoteMap: { [index: number]: NoteAccidental[] } = {
+  0: [{ note: BaseNote.A, accidental: Accidental.Natural }],
+  1: [
+    { note: BaseNote.A, accidental: Accidental.Sharp },
+    { note: BaseNote.B, accidental: Accidental.Flat },
+  ],
+  2: [
+    { note: BaseNote.B, accidental: Accidental.Natural },
+    { note: BaseNote.C, accidental: Accidental.Flat },
+  ],
+  3: [
+    { note: BaseNote.B, accidental: Accidental.Sharp },
+    { note: BaseNote.C, accidental: Accidental.Natural },
+  ],
+  4: [
+    { note: BaseNote.C, accidental: Accidental.Sharp },
+    { note: BaseNote.D, accidental: Accidental.Flat },
+  ],
+  5: [{ note: BaseNote.D, accidental: Accidental.Natural }],
+  6: [
+    { note: BaseNote.D, accidental: Accidental.Sharp },
+    { note: BaseNote.E, accidental: Accidental.Flat },
+  ],
+  7: [{ note: BaseNote.E, accidental: Accidental.Flat }],
+  8: [
+    { note: BaseNote.E, accidental: Accidental.Natural },
+    { note: BaseNote.F, accidental: Accidental.Flat },
+  ],
+  9: [
+    { note: BaseNote.E, accidental: Accidental.Sharp },
+    { note: BaseNote.F, accidental: Accidental.Natural },
+  ],
+  10: [
+    { note: BaseNote.F, accidental: Accidental.Sharp },
+    { note: BaseNote.G, accidental: Accidental.Flat },
+  ],
+  11: [{ note: BaseNote.G, accidental: Accidental.Natural }],
+  12: [
+    { note: BaseNote.G, accidental: Accidental.Sharp },
+    { note: BaseNote.A, accidental: Accidental.Flat },
+  ],
+};
+
+export const getNoteFromSemitones = (note: Note, semiTones: number): Note => {
+  const currentNoteKey = findKeyOfSubOject(totalNoteMap, (notes) =>
+    notes.some((s) => s.note === note.note && s.accidental === note.accidental)
+  );
+  const startSemiTones = Number.parseInt(currentNoteKey);
+  const octaveDifference = Math.floor(
+    Math.abs(startSemiTones + semiTones) / 13
+  );
+  const newNotes = totalNoteMap[Math.abs(startSemiTones + semiTones) % 13];
+  const newNote = getRandomItemFromArray(newNotes);
+  return new Note(
+    newNote.note,
+    note.octave + octaveDifference,
+    newNote.accidental
+  );
+};
+
+const convertStringToAccidental = (stringVersion: string): Accidental => {
+  switch (stringVersion) {
+    case "♮":
+      return Accidental.Natural;
+    case "♭":
+      return Accidental.Flat;
+    case "b":
+      return Accidental.Flat;
+    case "♯":
+      return Accidental.Sharp;
+    case "#":
+      return Accidental.Sharp;
+    default:
+      return Accidental.Natural;
+  }
+};
+
 const NoteNumMapUp = {
-  [BaseNote.A]: 0,
-  [BaseNote.B]: 2,
+  [BaseNote.A]: 12,
+  [BaseNote.B]: 14,
   [BaseNote.C]: 3,
   [BaseNote.D]: 5,
   [BaseNote.E]: 7,
@@ -41,15 +249,9 @@ const NoteNumMapUp = {
   [BaseNote.G]: 10,
 };
 
-const AccidentalMapDown = {
-  [Accidental.Natural]: 0,
-  [Accidental.Flat]: -1,
-  [Accidental.Sharp]: 1,
-};
-
 const NoteNumMapDown = {
   [BaseNote.A]: -0,
-  [BaseNote.B]: -10,
+  [BaseNote.B]: 2,
   [BaseNote.C]: -9,
   [BaseNote.D]: -7,
   [BaseNote.E]: -5,
@@ -57,7 +259,7 @@ const NoteNumMapDown = {
   [BaseNote.G]: -2,
 };
 
-const AccidentalMapUp = {
+const AccidentalMap = {
   [Accidental.Natural]: 0,
   [Accidental.Flat]: -1,
   [Accidental.Sharp]: 1,
@@ -74,7 +276,11 @@ export class Note {
   static readonly baseNote: BaseNote = BaseNote.A;
   static readonly baseOctave: number = 4;
 
-  constructor(note: BaseNote, accidental: Accidental, octave: number) {
+  constructor(
+    note: BaseNote,
+    octave: number,
+    accidental: Accidental = Accidental.Natural
+  ) {
     this.note = note;
     this.accidental = accidental;
     this.octave = octave;
@@ -94,91 +300,16 @@ export class Note {
       return (
         (this.octave - Note.baseOctave) * octaveSemiTones +
         currNoteDiff +
-        AccidentalMapDown[this.accidental]
+        AccidentalMap[this.accidental]
       );
     } else {
       let currNoteDiff = NoteNumMapUp[this.note];
       return (
-        (this.octave - Note.baseOctave) * octaveSemiTones +
+        (this.octave - 1 - Note.baseOctave) * octaveSemiTones +
         currNoteDiff +
-        AccidentalMapUp[this.accidental]
+        AccidentalMap[this.accidental]
       );
     }
-  }
-
-  private generateSinWave(time: number, frames: number): number {
-    /*
-      Formula as found:
-        Y = sin(2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time)
-      Overtones
-        Y += sin(2 * 2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time) / 2
-        Y += sin(3 * 2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time) / 4
-        Y += sin(4 * 2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time) / 8
-        Y += sin(5 * 2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time) / 16
-        Y += sin(6 * 2 * PI * w * time) * exp(-0.0004 * 2 * PI * w * time) / 32
-      Saturation
-        Y += Y * Y * Y
-      Optional
-        Y *= 1 + 16 * time * exp(-6 * time)
-
-      Other formula
-        y = 0.6 * sin(1*w*time) * exp(-0.0015*w*time);
-        y += 0.4 * sin(2*w*time) * exp(-0.0015 * w *  time);
-        y += y * y * y
-        y *= 1 + 16 * time * exp(-6 * time)
-
-      Third formula
-        y  = 0.6*sin(1.0*w*t)*exp(-0.0008*w*t);
-        y += 0.3*sin(2.0*w*t)*exp(-0.0010*w*t);
-        y += 0.1*sin(4.0*w*t)*exp(-0.0015*w*t);
-        y += 0.2*y*y*y;
-        y *= 0.9 + 0.1*cos(70.0*t);
-        y = 2.0*y*exp(-22.0*t) + y;
-
-        https://dsp.stackexchange.com/questions/46598/mathematical-equation-for-the-sound-wave-that-a-PIano-makes
-    */
-    const { exp, sin, cos, PI } = Math;
-    // const sin = (num: number) => Math.sin(num * (Math.PI / 180));
-    // const cos = (num: number) => Math.sin(num * (Math.PI / 180));
-    let w = this.pitch;
-    let t = time / frames;
-    // let y = 0.6 * sin(1.0 * w * t) * exp(-0.0008 * w * t);
-    // y += 0.3 * sin(2.0 * w * t) * exp(-0.001 * w * t);
-    // y += 0.1 * sin(4.0 * w * t) * exp(-0.0015 * w * t);
-    // y += 0.2 * y * y * y;
-    // y *= 0.9 + 0.1 * cos(70.0 * t);
-    // y = 2.0 * y * exp(-22.0 * t) + y;
-
-    let y = 0.6 * sin(1 * w * t) * exp(-0.0015 * w * t);
-    y += 0.4 * sin(2 * w * t) * exp(-0.0015 * w * t);
-    y += y * y * y;
-    y *= 1 + 16 * t * exp(-6 * t);
-
-    // Formula as found:
-    // let Y = sin(2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t);
-    // // Overtones
-    // Y += (sin(2 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 2;
-    // Y += (sin(3 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 4;
-    // Y += (sin(4 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 8;
-    // Y += (sin(5 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 16;
-    // Y += (sin(6 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 32;
-    // // Formula as found:
-    // Y = sin(2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t);
-    // // Overtones
-    // Y += (sin(2 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * time)) / 2;
-    // Y += (sin(3 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 4;
-    // Y += (sin(4 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 8;
-    // Y += (sin(5 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 16;
-    // Y += (sin(6 * 2 * PI * w * t) * exp(-0.0004 * 2 * PI * w * t)) / 32;
-    // // Saturation
-    // Y += Y * Y * Y;
-    // // Optional
-    // Y *= 1 + 16 * t * exp(-6 * t);
-    // Y += Y * Y * Y;
-    // // Optional
-    // Y *= 1 + 16 * t * exp(-6 * t);
-
-    return y;
   }
 
   playNote(totalDuration: number) {
@@ -199,8 +330,10 @@ export class Note {
       for (let i = 0; i < myArrayBuffer.length; i++) {
         // Math.random() is in [0; 1.0]
         // audio needs to be in [-1.0; 1.0]
-        nowBuffering[i] = this.generateSinWave(i, audioCtx.sampleRate);
-        // nowBuffering[i] = Math.random() * 2 - 1;
+        nowBuffering[i] = defaultFormula.Run(
+          this.pitch,
+          i / (audioCtx.sampleRate * totalDuration)
+        );
       }
     }
 
@@ -222,6 +355,22 @@ export class Note {
 
   get stringNotation(): string {
     return this.alternativeNotation.toString();
+  }
+
+  static fromString(note: string): Note {
+    const splitted = note.split("");
+    if (splitted.length === 2)
+      return new Note(
+        BaseNote[splitted[0] as BaseNote],
+        Number.parseInt(splitted[1])
+      );
+    else {
+      return new Note(
+        BaseNote[splitted[0] as BaseNote],
+        Number.parseInt(splitted[1]),
+        convertStringToAccidental(splitted[2])
+      );
+    }
   }
 
   toString() {
@@ -246,162 +395,3 @@ export class AlternativeNoteNotation {
     }${this.octave}`;
   }
 }
-
-export const NoteList: Note[] = [
-  new Note(BaseNote.C, Accidental.Natural, 0),
-  new Note(BaseNote.C, Accidental.Sharp, 0),
-  new Note(BaseNote.D, Accidental.Flat, 0),
-  new Note(BaseNote.D, Accidental.Natural, 0),
-  new Note(BaseNote.D, Accidental.Sharp, 0),
-  new Note(BaseNote.E, Accidental.Flat, 0),
-  new Note(BaseNote.E, Accidental.Natural, 0),
-  new Note(BaseNote.F, Accidental.Natural, 0),
-  new Note(BaseNote.F, Accidental.Sharp, 0),
-  new Note(BaseNote.G, Accidental.Flat, 0),
-  new Note(BaseNote.G, Accidental.Natural, 0),
-  new Note(BaseNote.G, Accidental.Sharp, 0),
-
-  new Note(BaseNote.A, Accidental.Flat, 1),
-  new Note(BaseNote.A, Accidental.Natural, 1),
-  new Note(BaseNote.A, Accidental.Sharp, 1),
-  new Note(BaseNote.B, Accidental.Flat, 1),
-  new Note(BaseNote.B, Accidental.Natural, 1),
-  new Note(BaseNote.C, Accidental.Natural, 1),
-  new Note(BaseNote.C, Accidental.Sharp, 1),
-  new Note(BaseNote.D, Accidental.Flat, 1),
-  new Note(BaseNote.D, Accidental.Natural, 1),
-  new Note(BaseNote.D, Accidental.Sharp, 1),
-  new Note(BaseNote.E, Accidental.Flat, 1),
-  new Note(BaseNote.E, Accidental.Natural, 1),
-  new Note(BaseNote.F, Accidental.Natural, 1),
-  new Note(BaseNote.F, Accidental.Sharp, 1),
-  new Note(BaseNote.G, Accidental.Flat, 1),
-  new Note(BaseNote.G, Accidental.Natural, 1),
-  new Note(BaseNote.G, Accidental.Sharp, 1),
-
-  new Note(BaseNote.A, Accidental.Flat, 2),
-  new Note(BaseNote.A, Accidental.Natural, 2),
-  new Note(BaseNote.A, Accidental.Sharp, 2),
-  new Note(BaseNote.B, Accidental.Flat, 2),
-  new Note(BaseNote.B, Accidental.Natural, 2),
-  new Note(BaseNote.C, Accidental.Natural, 2),
-  new Note(BaseNote.C, Accidental.Sharp, 2),
-  new Note(BaseNote.D, Accidental.Flat, 2),
-  new Note(BaseNote.D, Accidental.Natural, 2),
-  new Note(BaseNote.D, Accidental.Sharp, 2),
-  new Note(BaseNote.E, Accidental.Flat, 2),
-  new Note(BaseNote.E, Accidental.Natural, 2),
-  new Note(BaseNote.F, Accidental.Natural, 2),
-  new Note(BaseNote.F, Accidental.Sharp, 2),
-  new Note(BaseNote.G, Accidental.Flat, 2),
-  new Note(BaseNote.G, Accidental.Natural, 2),
-  new Note(BaseNote.G, Accidental.Sharp, 2),
-
-  new Note(BaseNote.A, Accidental.Flat, 3),
-  new Note(BaseNote.A, Accidental.Natural, 3),
-  new Note(BaseNote.A, Accidental.Sharp, 3),
-  new Note(BaseNote.B, Accidental.Flat, 3),
-  new Note(BaseNote.B, Accidental.Natural, 3),
-  new Note(BaseNote.C, Accidental.Natural, 3),
-  new Note(BaseNote.C, Accidental.Sharp, 3),
-  new Note(BaseNote.D, Accidental.Flat, 3),
-  new Note(BaseNote.D, Accidental.Natural, 3),
-  new Note(BaseNote.D, Accidental.Sharp, 3),
-  new Note(BaseNote.E, Accidental.Flat, 3),
-  new Note(BaseNote.E, Accidental.Natural, 3),
-  new Note(BaseNote.F, Accidental.Natural, 3),
-  new Note(BaseNote.F, Accidental.Sharp, 3),
-  new Note(BaseNote.G, Accidental.Flat, 3),
-  new Note(BaseNote.G, Accidental.Natural, 3),
-  new Note(BaseNote.G, Accidental.Sharp, 3),
-
-  new Note(BaseNote.A, Accidental.Flat, 4),
-  new Note(BaseNote.A, Accidental.Natural, 4),
-  new Note(BaseNote.A, Accidental.Sharp, 4),
-  new Note(BaseNote.B, Accidental.Flat, 4),
-  new Note(BaseNote.B, Accidental.Natural, 4),
-  new Note(BaseNote.C, Accidental.Natural, 4),
-  new Note(BaseNote.C, Accidental.Sharp, 4),
-  new Note(BaseNote.D, Accidental.Flat, 4),
-  new Note(BaseNote.D, Accidental.Natural, 4),
-  new Note(BaseNote.D, Accidental.Sharp, 4),
-  new Note(BaseNote.E, Accidental.Flat, 4),
-  new Note(BaseNote.E, Accidental.Natural, 4),
-  new Note(BaseNote.F, Accidental.Natural, 4),
-  new Note(BaseNote.F, Accidental.Sharp, 4),
-  new Note(BaseNote.G, Accidental.Flat, 4),
-  new Note(BaseNote.G, Accidental.Natural, 4),
-  new Note(BaseNote.G, Accidental.Sharp, 4),
-
-  new Note(BaseNote.A, Accidental.Flat, 5),
-  new Note(BaseNote.A, Accidental.Natural, 5),
-  new Note(BaseNote.A, Accidental.Sharp, 5),
-  new Note(BaseNote.B, Accidental.Flat, 5),
-  new Note(BaseNote.B, Accidental.Natural, 5),
-  new Note(BaseNote.C, Accidental.Natural, 5),
-  new Note(BaseNote.C, Accidental.Sharp, 5),
-  new Note(BaseNote.D, Accidental.Flat, 5),
-  new Note(BaseNote.D, Accidental.Natural, 5),
-  new Note(BaseNote.D, Accidental.Sharp, 5),
-  new Note(BaseNote.E, Accidental.Flat, 5),
-  new Note(BaseNote.E, Accidental.Natural, 5),
-  new Note(BaseNote.F, Accidental.Natural, 5),
-  new Note(BaseNote.F, Accidental.Sharp, 5),
-  new Note(BaseNote.G, Accidental.Flat, 5),
-  new Note(BaseNote.G, Accidental.Natural, 5),
-  new Note(BaseNote.G, Accidental.Sharp, 5),
-
-  new Note(BaseNote.A, Accidental.Flat, 6),
-  new Note(BaseNote.A, Accidental.Natural, 6),
-  new Note(BaseNote.A, Accidental.Sharp, 6),
-  new Note(BaseNote.B, Accidental.Flat, 6),
-  new Note(BaseNote.B, Accidental.Natural, 6),
-  new Note(BaseNote.C, Accidental.Natural, 6),
-  new Note(BaseNote.C, Accidental.Sharp, 6),
-  new Note(BaseNote.D, Accidental.Flat, 6),
-  new Note(BaseNote.D, Accidental.Natural, 6),
-  new Note(BaseNote.D, Accidental.Sharp, 6),
-  new Note(BaseNote.E, Accidental.Flat, 6),
-  new Note(BaseNote.E, Accidental.Natural, 6),
-  new Note(BaseNote.F, Accidental.Natural, 6),
-  new Note(BaseNote.F, Accidental.Sharp, 6),
-  new Note(BaseNote.G, Accidental.Flat, 6),
-  new Note(BaseNote.G, Accidental.Natural, 6),
-  new Note(BaseNote.G, Accidental.Sharp, 6),
-
-  new Note(BaseNote.A, Accidental.Flat, 7),
-  new Note(BaseNote.A, Accidental.Natural, 7),
-  new Note(BaseNote.A, Accidental.Sharp, 7),
-  new Note(BaseNote.B, Accidental.Flat, 7),
-  new Note(BaseNote.B, Accidental.Natural, 7),
-  new Note(BaseNote.C, Accidental.Natural, 7),
-  new Note(BaseNote.C, Accidental.Sharp, 7),
-  new Note(BaseNote.D, Accidental.Flat, 7),
-  new Note(BaseNote.D, Accidental.Natural, 7),
-  new Note(BaseNote.D, Accidental.Sharp, 7),
-  new Note(BaseNote.E, Accidental.Flat, 7),
-  new Note(BaseNote.E, Accidental.Natural, 7),
-  new Note(BaseNote.F, Accidental.Natural, 7),
-  new Note(BaseNote.F, Accidental.Sharp, 7),
-  new Note(BaseNote.G, Accidental.Flat, 7),
-  new Note(BaseNote.G, Accidental.Natural, 7),
-  new Note(BaseNote.G, Accidental.Sharp, 7),
-
-  new Note(BaseNote.A, Accidental.Flat, 8),
-  new Note(BaseNote.A, Accidental.Natural, 8),
-  new Note(BaseNote.A, Accidental.Sharp, 8),
-  new Note(BaseNote.B, Accidental.Flat, 8),
-  new Note(BaseNote.B, Accidental.Natural, 8),
-  new Note(BaseNote.C, Accidental.Natural, 8),
-  new Note(BaseNote.C, Accidental.Sharp, 8),
-  new Note(BaseNote.D, Accidental.Flat, 8),
-  new Note(BaseNote.D, Accidental.Natural, 8),
-  new Note(BaseNote.D, Accidental.Sharp, 8),
-  new Note(BaseNote.E, Accidental.Flat, 8),
-  new Note(BaseNote.E, Accidental.Natural, 8),
-  new Note(BaseNote.F, Accidental.Natural, 8),
-  new Note(BaseNote.F, Accidental.Sharp, 8),
-  new Note(BaseNote.G, Accidental.Flat, 8),
-  new Note(BaseNote.G, Accidental.Natural, 8),
-  new Note(BaseNote.G, Accidental.Sharp, 8),
-];
